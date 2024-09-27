@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - airflow_network
+
+  airflow-webserver:
+    image: airflow:latest  # Replace this with the 'airf225' image name or 'apache/airflow:latest'
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      #AIRFLOW__CORE__FERNET_KEY: your_fernet_key  # You can generate one with `openssl rand -base64 32`
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
+      AIRFLOW_WWW_USER_USERNAME: userairf
+      AIRFLOW_WWW_USER_PASSWORD: password
+
+    volumes:
+      - ./airflow:/opt/airflow
+    networks:
+      - airflow_network
+    ports:
+      - "8080:8080"
+    command: webserver
+  airflow-scheduler:
+    image: airflow:latest  # Replace this with the 'airf225' image name or 'apache/airflow:latest'
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      #AIRFLOW__CORE__FERNET_KEY: your_fernet_key  # Use the same fernet key as above
+    volumes:
+      - ./airflow:/opt/airflow
+    networks:
+      - airflow_network
+    command: scheduler
+
+volumes:
+  postgres_data:
+
+networks:
+  airflow_network:
+    driver: bridge

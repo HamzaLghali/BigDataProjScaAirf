@@ -1,0 +1,8 @@
+create user
+
+airflow users create \
+    --role Admin \
+    --username admin \
+    --firstname John \
+    --lastname Doe \
+    --email john.doe@example.org

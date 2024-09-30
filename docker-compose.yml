@@ -25,6 +25,7 @@ services:
       AIRFLOW_WWW_USER_USERNAME: userairf
       AIRFLOW_WWW_USER_PASSWORD: password
 
+      
     volumes:
       - ./airflow:/opt/airflow
     networks:

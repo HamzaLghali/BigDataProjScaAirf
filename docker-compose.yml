@@ -16,6 +16,7 @@ services:
     image: airflow:latest  # Replace this with the 'airf225' image name or 'apache/airflow:latest'
     depends_on:
       - postgres
+      - mailhog  # Added dependency on MailHog
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -24,6 +25,10 @@ services:
       AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
       AIRFLOW_WWW_USER_USERNAME: userairf
       AIRFLOW_WWW_USER_PASSWORD: password
+      AIRFLOW__SMTP__SMTP_HOST: mailhog  # Set MailHog as the SMTP host
+      AIRFLOW__SMTP__SMTP_PORT: 1025  # MailHog's default SMTP port
+
+      
 
     volumes:
       - ./airflow:/opt/airflow
@@ -32,10 +37,12 @@ services:
     ports:
       - "8080:8080"
     command: webserver
+
   airflow-scheduler:
     image: airflow:latest  # Replace this with the 'airf225' image name or 'apache/airflow:latest'
     depends_on:
       - postgres
+      - mailhog
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -45,6 +52,14 @@ services:
     networks:
       - airflow_network
     command: scheduler
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025"  # MailHog web interface
+      - "1025:1025"  # SMTP port
+    networks:
+      - airflow_network
 
 volumes:
   postgres_data:

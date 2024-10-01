@@ -16,7 +16,7 @@ services:
     image: airflow:latest  # Replace this with the 'airf225' image name or 'apache/airflow:latest'
     depends_on:
       - postgres
-      - mailhog  # Added dependency on MailHog
+      #- mailhog  # Added dependency on MailHog
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -25,10 +25,8 @@ services:
       AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
       AIRFLOW_WWW_USER_USERNAME: userairf
       AIRFLOW_WWW_USER_PASSWORD: password
-      AIRFLOW__SMTP__SMTP_HOST: mailhog  # Set MailHog as the SMTP host
-      AIRFLOW__SMTP__SMTP_PORT: 1025  # MailHog's default SMTP port
-
-      
+      # AIRFLOW__SMTP__SMTP_HOST: mailhog  # Set MailHog as the SMTP host
+      # AIRFLOW__SMTP__SMTP_PORT: 1025  # MailHog's default SMTP port
 
     volumes:
       - ./airflow:/opt/airflow
@@ -39,10 +37,10 @@ services:
     command: webserver
 
   airflow-scheduler:
-    image: airflow:latest  # Replace this with the 'airf225' image name or 'apache/airflow:latest'
+    image: airflow:latest  
     depends_on:
       - postgres
-      - mailhog
+      #- mailhog
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -53,13 +51,35 @@ services:
       - airflow_network
     command: scheduler
 
-  mailhog:
-    image: mailhog/mailhog
+  spark-master:
+    image: apache/spark:latest  # Using the official Apache Spark image
+    environment:
+      - SPARK_MODE=master
     ports:
-      - "8025:8025"  # MailHog web interface
-      - "1025:1025"  # SMTP port
+      - "7077:7077"  # Spark master port
+      - "8081:8080"  # Web UI port for Spark master
     networks:
       - airflow_network
+
+  spark-worker:
+    image: apache/spark:latest  # Using the official Apache Spark image
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077  # Connect the worker to the Spark master
+    networks:
+      - airflow_network
+    ports:
+      - "8082:8081"  # Web UI port for Spark worker
+
+
+  # mailhog:
+  #   image: mailhog/mailhog
+  #   ports:
+  #     - "8025:8025"  # MailHog web interface
+  #     - "1025:1025"  # SMTP port
+  #   networks:
+  #     - airflow_network
 
 volumes:
   postgres_data:

@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   postgres:
@@ -13,21 +13,16 @@ services:
       - airflow_network
 
   airflow-webserver:
-    image: airflow:latest  # Replace this with the 'airf225' image name or 'apache/airflow:latest'
+    image: airflow:latest  # Use 'airf225' if you have a custom image
     depends_on:
       - postgres
-      #- mailhog  # Added dependency on MailHog
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      #AIRFLOW__CORE__FERNET_KEY: your_fernet_key  # You can generate one with `openssl rand -base64 32`
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
       AIRFLOW_WWW_USER_USERNAME: userairf
       AIRFLOW_WWW_USER_PASSWORD: password
-      # AIRFLOW__SMTP__SMTP_HOST: mailhog  # Set MailHog as the SMTP host
-      # AIRFLOW__SMTP__SMTP_PORT: 1025  # MailHog's default SMTP port
-
     volumes:
       - ./airflow:/opt/airflow
     networks:
@@ -37,49 +32,33 @@ services:
     command: webserver
 
   airflow-scheduler:
-    image: airflow:latest  
+    image: airflow:latest
     depends_on:
       - postgres
-      #- mailhog
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      #AIRFLOW__CORE__FERNET_KEY: your_fernet_key  # Use the same fernet key as above
     volumes:
       - ./airflow:/opt/airflow
     networks:
       - airflow_network
     command: scheduler
 
-  spark-master:
-    image: apache/spark:latest  # Using the official Apache Spark image
+  hue:
+    image: gethue/hue:latest
     environment:
-      - SPARK_MODE=master
-    ports:
-      - "7077:7077"  # Spark master port
-      - "8081:8080"  # Web UI port for Spark master
-    networks:
-      - airflow_network
-
-  spark-worker:
-    image: apache/spark:latest  # Using the official Apache Spark image
+      HUE_DATABASE_ENGINE: postgresql_psycopg2
+      HUE_DATABASE_NAME: airflow
+      HUE_DATABASE_USER: airflow
+      HUE_DATABASE_PASSWORD: airflow
+      HUE_DATABASE_HOST: postgres
+      HUE_DATABASE_PORT: 5432
     depends_on:
-      - spark-master
-    environment:
-      - SPARK_MASTER=spark://spark-master:7077  # Connect the worker to the Spark master
+      - postgres
     networks:
       - airflow_network
     ports:
-      - "8082:8081"  # Web UI port for Spark worker
-
-
-  # mailhog:
-  #   image: mailhog/mailhog
-  #   ports:
-  #     - "8025:8025"  # MailHog web interface
-  #     - "1025:1025"  # SMTP port
-  #   networks:
-  #     - airflow_network
+      - "8888:8888"
 
 volumes:
   postgres_data:
